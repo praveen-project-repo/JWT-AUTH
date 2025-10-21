@@ -1,7 +1,7 @@
 'use client';
 import { UserNav } from '@/components/auth/user-nav';
 import { useUser } from '@/firebase';
-import { redirect } from 'next/navigation';
+import { redirect, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -27,6 +27,7 @@ import {
 import { useFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function DashboardLayout({
   children,
@@ -37,7 +38,7 @@ export default function DashboardLayout({
   const { auth } = useFirebase();
   const { toast } = useToast();
   const router = useRouter();
-
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -88,6 +89,14 @@ export default function DashboardLayout({
     return null; // Or a redirect component, though useEffect handles it
   }
 
+  const menuItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/dashboard/activity', label: 'Activity', icon: Activity },
+    { href: '/dashboard/users', label: 'Users', icon: Users },
+    { href: '/dashboard/billing', label: 'Billing', icon: CreditCard },
+    { href: '/dashboard/settings', label: 'Settings', icon: Settings },
+  ];
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -99,36 +108,16 @@ export default function DashboardLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton isActive>
-                <LayoutDashboard />
-                Dashboard
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton>
-                <Activity />
-                Activity
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton>
-                <Users />
-                Users
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton>
-                <CreditCard />
-                Billing
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton>
-                <Settings />
-                Settings
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {menuItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <Link href={item.href} passHref legacyBehavior>
+                  <SidebarMenuButton isActive={pathname === item.href}>
+                    <item.icon />
+                    {item.label}
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
