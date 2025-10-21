@@ -22,9 +22,48 @@ import { Separator } from '@/components/ui/separator';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useTheme } from 'next-themes';
+import { useUser, useFirebase } from '@/firebase';
+import { useState, useEffect } from 'react';
+import { updateProfile } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const { user } = useUser();
+  const { auth } = useFirebase();
+  const { toast } = useToast();
+  
+  const [displayName, setDisplayName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user?.displayName) {
+      setDisplayName(user.displayName);
+    }
+  }, [user]);
+
+  const handleSaveChanges = async () => {
+    if (!auth.currentUser || displayName === user?.displayName) return;
+
+    setIsSaving(true);
+    try {
+      await updateProfile(auth.currentUser, { displayName });
+      toast({
+        title: 'Profile Updated',
+        description: 'Your name has been successfully updated.',
+      });
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Could not update your profile. Please try again.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -50,15 +89,22 @@ export default function SettingsPage() {
                 <CardContent className="pt-6 space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" defaultValue="John Doe" />
+                        <Input 
+                          id="name" 
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)} 
+                        />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email Address</Label>
-                        <Input id="email" type="email" defaultValue="john.doe@example.com" disabled />
+                        <Input id="email" type="email" value={user?.email || ''} disabled />
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button>Save Changes</Button>
+                    <Button onClick={handleSaveChanges} disabled={isSaving || displayName === user?.displayName}>
+                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save Changes
+                    </Button>
                 </CardFooter>
             </Card>
         </div>
