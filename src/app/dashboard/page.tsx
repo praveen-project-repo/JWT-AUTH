@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -45,41 +46,57 @@ const stats = [
   },
 ];
 
-const recentSales = [
+const initialSales = [
   {
     name: 'Olivia Martin',
     email: 'olivia.martin@email.com',
     amount: '+$1,999.00',
-    status: 'pending'
+    status: 'pending' as const,
   },
   {
     name: 'Jackson Lee',
     email: 'jackson.lee@email.com',
     amount: '+$39.00',
-    status: 'processing'
+    status: 'processing' as const,
   },
   {
     name: 'Isabella Nguyen',
     email: 'isabella.nguyen@email.com',
     amount: '+$299.00',
-    status: 'success'
+    status: 'success' as const,
   },
   {
     name: 'William Kim',
     email: 'will@email.com',
     amount: '+$99.00',
-    status: 'success'
+    status: 'success' as const,
   },
   {
     name: 'Sofia Davis',
     email: 'sofia.davis@email.com',
     amount: '+$39.00',
-    status: 'processing'
+    status: 'processing' as const,
   },
 ];
 
 export default function DashboardPage() {
   const { user } = useUser();
+  const [recentSales, setRecentSales] = useState(initialSales);
+
+  const handleStatusChange = (index: number) => {
+    const newSales = [...recentSales];
+    const currentSale = newSales[index];
+
+    if (currentSale.status === 'success') {
+      currentSale.status = 'pending';
+    } else if (currentSale.status === 'pending') {
+      currentSale.status = 'success';
+    }
+    // 'processing' status remains unchanged
+    
+    setRecentSales(newSales);
+  };
+
 
   if (!user) {
     return null;
@@ -132,7 +149,7 @@ export default function DashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentSales.map((sale) => (
+                {recentSales.map((sale, index) => (
                   <TableRow key={sale.email}>
                     <TableCell>
                       <div className="font-medium">{sale.name}</div>
@@ -141,7 +158,17 @@ export default function DashboardPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={sale.status === 'success' ? 'default' : sale.status === 'pending' ? 'secondary' : 'outline'} className={sale.status === 'success' ? 'bg-green-500/20 text-green-700 border-green-500/20' : sale.status === 'pending' ? 'bg-yellow-500/20 text-yellow-700 border-yellow-500/20' : ''}>{sale.status}</Badge>
+                      <Badge 
+                        variant={sale.status === 'success' ? 'default' : sale.status === 'pending' ? 'secondary' : 'outline'} 
+                        className={
+                          `cursor-pointer ` + 
+                          (sale.status === 'success' ? 'bg-green-500/20 text-green-700 border-green-500/20' : 
+                          sale.status === 'pending' ? 'bg-yellow-500/20 text-yellow-700 border-yellow-500/20' : '')
+                        }
+                        onClick={() => handleStatusChange(index)}
+                      >
+                        {sale.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">{sale.amount}</TableCell>
                   </TableRow>
