@@ -1,12 +1,26 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+'use client'
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
-  const hasSession = cookies().has('session-token');
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
 
-  if (hasSession) {
-    redirect('/dashboard');
-  } else {
-    redirect('/login');
-  }
+  useEffect(() => {
+    if (!isUserLoading) {
+      if (user) {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/login');
+      }
+    }
+  }, [user, isUserLoading, router]);
+
+  return (
+    <div className="flex h-screen items-center justify-center">
+      <Loader2 className="animate-spin text-primary" size={48} />
+    </div>
+  );
 }

@@ -19,16 +19,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-
-type User = {
-  name: string;
-  email: string;
-}
+import type { User } from 'firebase/auth';
+import { useFirebase } from '@/firebase';
 
 export function UserNav({ user }: { user: User }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const { auth } = useFirebase();
 
   useEffect(() => {
     setIsClient(true);
@@ -36,17 +34,12 @@ export function UserNav({ user }: { user: User }) {
 
   async function handleLogout() {
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      if (response.ok) {
-        toast({
-          title: 'Logged Out',
-          description: 'You have been successfully logged out.',
-        });
-        router.push('/login');
-        router.refresh();
-      } else {
-        throw new Error('Logout failed');
-      }
+      await auth.signOut();
+      toast({
+        title: 'Logged Out',
+        description: 'You have been successfully logged out.',
+      });
+      router.push('/login');
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -60,7 +53,8 @@ export function UserNav({ user }: { user: User }) {
     return null;
   }
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
     const names = name.split(' ');
     if (names.length > 1) {
       return `${names[0][0]}${names[names.length - 1][0]}`;
@@ -68,22 +62,25 @@ export function UserNav({ user }: { user: User }) {
     return names[0].substring(0, 2);
   };
   
+  const displayName = user.displayName || 'User';
+  const displayEmail = user.email || 'No email';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="/placeholder.svg" alt={`@${user.name}`} />
-            <AvatarFallback>{getInitials(user.name).toUpperCase()}</AvatarFallback>
+            {user.photoURL && <AvatarImage src={user.photoURL} alt={`@${displayName}`} />}
+            <AvatarFallback>{getInitials(displayName).toUpperCase()}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
+              {displayEmail}
             </p>
           </div>
         </DropdownMenuLabel>

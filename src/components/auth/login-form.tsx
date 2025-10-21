@@ -18,13 +18,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Loader2 } from 'lucide-react';
+import { useFirebase } from '@/firebase';
+import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { FirebaseError } from 'firebase/app';
 
 const formSchema = z.object({
   email: z.string().email({
     message: 'Please enter a valid email address.',
   }),
-  password: z.string().min(1, {
-    message: 'Password is required.',
+  password: z.string().min(6, {
+    message: 'Password must be at least 6 characters.',
   }),
 });
 
@@ -32,6 +35,8 @@ export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const { auth } = useFirebase();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -44,32 +49,44 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
-      });
-
-      if (response.ok) {
+      if (isSignUp) {
+        await initiateEmailSignUp(auth, values.email, values.password);
+        toast({
+          title: 'Sign Up Successful',
+          description: "You've created a new account. Please sign in.",
+        });
+        setIsSignUp(false); // Switch to sign in view
+      } else {
+        await initiateEmailSignIn(auth, values.email, values.password);
+        // onAuthStateChanged in FirebaseProvider will handle the redirect
         toast({
           title: 'Login Successful',
           description: 'Welcome back!',
         });
         router.push('/dashboard');
-        router.refresh(); // To ensure server components re-render with new session
-      } else {
-        const data = await response.json();
-        toast({
-          variant: 'destructive',
-          title: 'Login Failed',
-          description: data.error || 'An error occurred.',
-        });
       }
     } catch (error) {
+      console.error(error);
+      let description = 'An unexpected error occurred.';
+      if (error instanceof FirebaseError) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+            description = 'No account found with this email. Would you like to sign up?';
+            break;
+          case 'auth/wrong-password':
+            description = 'Incorrect password. Please try again.';
+            break;
+          case 'auth/email-already-in-use':
+            description = 'This email is already in use. Please sign in.';
+            break;
+          default:
+            description = error.message;
+        }
+      }
       toast({
         variant: 'destructive',
-        title: 'Uh oh! Something went wrong.',
-        description: 'There was a problem with your request.',
+        title: isSignUp ? 'Sign Up Failed' : 'Login Failed',
+        description,
       });
     } finally {
       setIsLoading(false);
@@ -111,7 +128,18 @@ export function LoginForm() {
           ) : (
             <LogIn className="mr-2 h-4 w-4" />
           )}
-          Sign In
+          {isSignUp ? 'Sign Up' : 'Sign In'}
+        </Button>
+
+        <Button
+          type="button"
+          variant="link"
+          className="w-full"
+          onClick={() => setIsSignUp(!isSignUp)}
+        >
+          {isSignUp
+            ? 'Already have an account? Sign In'
+            : "Don't have an account? Sign Up"}
         </Button>
       </form>
     </Form>
