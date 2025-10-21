@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,7 +20,10 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, Loader2 } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { initiateEmailSignIn, initiateEmailSignUp } from '@/firebase/non-blocking-login';
+import { 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+} from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 
 const formSchema = z.object({
@@ -50,14 +54,14 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       if (isSignUp) {
-        await initiateEmailSignUp(auth, values.email, values.password);
+        await createUserWithEmailAndPassword(auth, values.email, values.password);
         toast({
           title: 'Sign Up Successful',
           description: "You've created a new account. Please sign in.",
         });
         setIsSignUp(false); // Switch to sign in view
       } else {
-        await initiateEmailSignIn(auth, values.email, values.password);
+        await signInWithEmailAndPassword(auth, values.email, values.password);
         // onAuthStateChanged in FirebaseProvider will handle the redirect
         toast({
           title: 'Login Successful',
@@ -71,10 +75,9 @@ export function LoginForm() {
       if (error instanceof FirebaseError) {
         switch (error.code) {
           case 'auth/user-not-found':
-            description = 'No account found with this email. Would you like to sign up?';
-            break;
           case 'auth/wrong-password':
-            description = 'Incorrect password. Please try again.';
+          case 'auth/invalid-credential':
+            description = 'Invalid email or password. Please try again or sign up.';
             break;
           case 'auth/email-already-in-use':
             description = 'This email is already in use. Please sign in.';
