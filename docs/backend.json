@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user account.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "User's email address.",
+          "format": "email"
+        },
+        "registrationDate": {
+          "type": "string",
+          "description": "Date and time when the user registered.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "registrationDate"
+      ]
+    },
+    "RefreshToken": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RefreshToken",
+      "type": "object",
+      "description": "Stores refresh tokens for users.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RefreshToken entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N RefreshToken)"
+        },
+        "token": {
+          "type": "string",
+          "description": "The refresh token string."
+        },
+        "expiryDate": {
+          "type": "string",
+          "description": "Date and time when the refresh token expires.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "token",
+        "expiryDate"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user account information.  Access is restricted to the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/refreshTokens/{refreshTokenId}",
+        "definition": {
+          "entityName": "RefreshToken",
+          "schema": {
+            "$ref": "#/backend/entities/RefreshToken"
+          },
+          "description": "Stores refresh tokens for each user.  Access is restricted to the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "refreshTokenId",
+              "description": "The unique identifier of the refresh token."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "Given the need for user authentication and token refresh functionality, the Firestore structure will focus on securely storing user data and refresh tokens. The structure will leverage path-based ownership for user data to ensure only the user can access their own information. A dedicated collection will store refresh tokens, linked to users via the userId. This design promotes authorization independence by avoiding reliance on parent document reads for authorization and facilitates secure list operations. The use of userId in refresh token document ensures that each user can only manage their own tokens."
+  }
+}
