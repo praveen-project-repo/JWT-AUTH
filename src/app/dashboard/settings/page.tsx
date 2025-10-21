@@ -21,8 +21,11 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Settings as SettingsIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { useTheme } from 'next-themes';
 
 export default function SettingsPage() {
+  const { theme, setTheme } = useTheme();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -73,7 +76,7 @@ export default function SettingsPage() {
                 <CardContent className="pt-6 space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="theme">Theme</Label>
-                    <Select defaultValue="light">
+                    <Select value={theme} onValueChange={setTheme}>
                         <SelectTrigger id="theme">
                             <SelectValue placeholder="Select theme" />
                         </SelectTrigger>
